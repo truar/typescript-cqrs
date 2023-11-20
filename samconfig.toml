@@ -1,0 +1,9 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "ShoppingCart-ES"
+resolve_s3 = true
+s3_prefix = "ShoppingCart-ES"
+region = "eu-west-3"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "AwsEnvPrefix=\"local\""
+image_repositories = []

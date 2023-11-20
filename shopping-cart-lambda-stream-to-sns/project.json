@@ -1,0 +1,57 @@
+{
+  "name": "shopping-cart-lambda-stream-to-sns",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "shopping-cart-lambda-stream-to-sns/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "options": {
+        "main": "shopping-cart-lambda-stream-to-sns/src/index.ts",
+        "tsConfig": "shopping-cart-lambda-stream-to-sns/tsconfig.app.json",
+        "outputPath": "dist/shopping-cart-lambda-stream-to-sns"
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "esbuildOptions": {
+            "sourcemap": false,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "shopping-cart-lambda-stream-to-sns:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "shopping-cart-lambda-stream-to-sns:build:development"
+        },
+        "production": {
+          "buildTarget": "shopping-cart-lambda-stream-to-sns:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["shopping-cart-lambda-stream-to-sns/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "shopping-cart-lambda-stream-to-sns/jest.config.ts"
+      }
+    }
+  },
+  "tags": []
+}

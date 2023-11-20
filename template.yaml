@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  AwsEnvPrefix:
+    Type: String
+
+Resources:
+  ShoppingCartEventDynamoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Sub ${AwsEnvPrefix}-shopping-cart-events-table
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      AttributeDefinitions:
+        - AttributeName: shoppingCartId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: shoppingCartId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: True
+
+  ShoppingCartEventTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AwsEnvPrefix}-shopping-cart-events.fifo
+      FifoTopic: true
+
+  ShoppingCartLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AwsEnvPrefix}-shopping-cart-lambda-execution-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub '${AwsEnvPrefix}-shopping-cart-lambda-cloud-watch-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - arn:aws:logs:eu-west-3:909133997228:*
+        - PolicyName: !Sub '${AwsEnvPrefix}-shopping-cart-lambda-dynamo-stream-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !GetAtt ShoppingCartEventDynamoTable.StreamArn
+        - PolicyName: !Sub '${AwsEnvPrefix}-shopping-cart-lambda-sns-publish-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !Ref ShoppingCartEventTopic
+
+  ShoppingCartLambdaStreamToSns:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AwsEnvPrefix}-shopping-cart-lambda-stream-to-sns'
+      Role: !GetAtt ShoppingCartLambdaExecutionRole.Arn
+      CodeUri: ./dist/shopping-cart-lambda-stream-to-sns
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 30 # default is 3s
+      MemorySize: 2048 # default is 128Mi
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          AWS_TOPIC_SHOPPING_CART_EVENTS: !Ref ShoppingCartEventTopic
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: 'es2020'
+        Sourcemap: true
+        EntryPoints:
+          - index.js
+
+  ShoppingCartStreamToLambda:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      FunctionName: !Ref ShoppingCartLambdaStreamToSns
+      EventSourceArn: !GetAtt ShoppingCartEventDynamoTable.StreamArn
+      StartingPosition: TRIM_HORIZON
+
+Outputs:
+  ShoppingCartEventsTableName:
+    Value: !Ref ShoppingCartEventDynamoTable
+  ShoppingCartEventsStreamArn:
+    Value: !GetAtt ShoppingCartEventDynamoTable.StreamArn
+  ShoppingCartEventsTopicArn:
+    Value: !Ref ShoppingCartEventTopic
+  ShoppingCartEventsLambdaName:
+    Value: !Ref ShoppingCartLambdaStreamToSns
