@@ -26474,7 +26474,6 @@ var v4_default2 = v42;
 var snsClient = new import_client_sns.SNSClient();
 var handler = async (event, context, callback) => {
   event.Records.forEach((record) => {
-    console.log("Stream record: ", JSON.stringify(record, null, 2));
     if (record.eventName == "INSERT") {
       const newImage = record.dynamodb?.NewImage;
       const event2 = {};
@@ -26483,7 +26482,6 @@ var handler = async (event, context, callback) => {
         const value = valueWithType["S"];
         event2[key] = value;
       }
-      console.log(event2);
       snsClient.send(
         new import_client_sns.PublishCommand({
           TopicArn: process.env.AWS_TOPIC_SHOPPING_CART_EVENTS,

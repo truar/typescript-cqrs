@@ -3,36 +3,36 @@ Transform:
   - AWS::Serverless-2016-10-31
 
 Resources:
-  ShoppingCartEventDynamoTable:
+  DynamoResource:
     Type: AWS::DynamoDB::Table
     Properties:
       BillingMode: PAY_PER_REQUEST
-      TableName: !Sub ${AWS::StackName}-shopping-cart-events-table
+      TableName: !Sub ${AWS::StackName}-dynamo-table
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       AttributeDefinitions:
-        - AttributeName: shoppingCartId
+        - AttributeName: id
           AttributeType: S
         - AttributeName: timestamp
           AttributeType: S
       KeySchema:
-        - AttributeName: shoppingCartId
+        - AttributeName: id
           KeyType: HASH
         - AttributeName: timestamp
           KeyType: RANGE
       SSESpecification:
         SSEEnabled: True
 
-  ShoppingCartEventTopic:
+  SnsTopicResource:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub ${AWS::StackName}-shopping-cart-events.fifo
+      TopicName: !Sub ${AWS::StackName}-sns-topic.fifo
       FifoTopic: true
 
-  ShoppingCartLambdaExecutionRole:
+  LambdaExecRoleResource:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${AWS::StackName}-shopping-cart-lambda-execution-role'
+      RoleName: !Sub '${AWS::StackName}-execution-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -44,7 +44,7 @@ Resources:
               - sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: !Sub '${AWS::StackName}-shopping-cart-lambda-cloud-watch-policy'
+        - PolicyName: !Sub '${AWS::StackName}-cloud-watch-policy'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -55,7 +55,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - arn:aws:logs:eu-west-3:909133997228:*
-        - PolicyName: !Sub '${AWS::StackName}-shopping-cart-lambda-dynamo-stream-policy'
+        - PolicyName: !Sub '${AWS::StackName}-dynamo-stream-policy'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -66,8 +66,8 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !GetAtt ShoppingCartEventDynamoTable.StreamArn
-        - PolicyName: !Sub '${AWS::StackName}-shopping-cart-lambda-sns-publish-policy'
+                  - !GetAtt DynamoResource.StreamArn
+        - PolicyName: !Sub '${AWS::StackName}-lambda-sns-policy'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -75,14 +75,14 @@ Resources:
                 Action:
                   - sns:Publish
                 Resource:
-                  - !Ref ShoppingCartEventTopic
+                  - !Ref SnsTopicResource
 
-  ShoppingCartLambdaStreamToSns:
+  LambdaStreamToSnsResource:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub '${AWS::StackName}-shopping-cart-lambda-stream-to-sns'
-      Role: !GetAtt ShoppingCartLambdaExecutionRole.Arn
-      CodeUri: ./dist/shopping-cart-lambda-stream-to-sns
+      FunctionName: !Sub '${AWS::StackName}-lambda-stream-to-sns'
+      Role: !GetAtt LambdaExecRoleResource.Arn
+      CodeUri: ./dist/apps/shopping-cart-lambda-stream-to-sns
       Handler: main.handler
       Runtime: nodejs18.x
       Timeout: 30 # default is 3s
@@ -91,7 +91,7 @@ Resources:
         - x86_64
       Environment:
         Variables:
-          AWS_TOPIC_SHOPPING_CART_EVENTS: !Ref ShoppingCartEventTopic
+          AWS_SNS_TOPIC_ARN: !Ref SnsTopicResource
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -99,31 +99,31 @@ Resources:
         Target: 'es2020'
         Sourcemap: true
         EntryPoints:
-          - index.js
+          - main.js
 
-  ShoppingCartStreamToLambda:
+  EventSourceStreamToLambdaResource:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 1
       Enabled: true
-      FunctionName: !Ref ShoppingCartLambdaStreamToSns
-      EventSourceArn: !GetAtt ShoppingCartEventDynamoTable.StreamArn
+      FunctionName: !Ref LambdaStreamToSnsResource
+      EventSourceArn: !GetAtt DynamoResource.StreamArn
       StartingPosition: TRIM_HORIZON
 
-  ShoppingCartFakeListenerQueue:
+  FakeListenerQueueResource:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub '${AWS::StackName}-shopping-cart-fake-listener.fifo'
+      QueueName: !Sub '${AWS::StackName}-fake-listener.fifo'
       FifoQueue: true
       DeduplicationScope: messageGroup
       FifoThroughputLimit: perMessageGroupId
       VisibilityTimeout: 650
 
-  ShoppingCartSnsToSqsPolicy:
+  SnsToSqsPolicyResource:
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues:
-        - Ref: ShoppingCartFakeListenerQueue
+        - Ref: FakeListenerQueueResource
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -131,27 +131,27 @@ Resources:
             Principal:
               Service: 'sns.amazonaws.com'
             Resource:
-              - !GetAtt ShoppingCartFakeListenerQueue.Arn
+              - !GetAtt FakeListenerQueueResource.Arn
             Action: 'sqs:SendMessage'
             Condition:
               ForAnyValue:ArnEquals:
                 'aws:SourceArn':
-                  - !Ref ShoppingCartEventTopic
+                  - !Ref SnsTopicResource
 
-  ShoppingCartFakeListenerSubscription:
+  FakeListenerSubscriptionResource:
     Type: AWS::SNS::Subscription
     Properties:
       Protocol: sqs
-      TopicArn: !Ref ShoppingCartEventTopic
-      Endpoint: !GetAtt ShoppingCartFakeListenerQueue.Arn
+      TopicArn: !Ref SnsTopicResource
+      Endpoint: !GetAtt FakeListenerQueueResource.Arn
       RawMessageDelivery: true
 
 Outputs:
-  ShoppingCartEventsTableName:
-    Value: !Ref ShoppingCartEventDynamoTable
-  ShoppingCartEventsStreamArn:
-    Value: !GetAtt ShoppingCartEventDynamoTable.StreamArn
-  ShoppingCartEventsTopicArn:
-    Value: !Ref ShoppingCartEventTopic
-  ShoppingCartEventsLambdaName:
-    Value: !Ref ShoppingCartLambdaStreamToSns
+  DynamoName:
+    Value: !Ref DynamoResource
+  StreamArn:
+    Value: !GetAtt DynamoResource.StreamArn
+  SnsTopicName:
+    Value: !Ref SnsTopicResource
+  LambdaToSnsName:
+    Value: !Ref LambdaStreamToSnsResource

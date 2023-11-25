@@ -4,8 +4,6 @@ import { v4 } from 'uuid'
 const snsClient = new SNSClient()
 export const handler: Handler = async (event, context, callback) => {
   event.Records.forEach((record: DynamoDBRecord) => {
-    console.log('Stream record: ', JSON.stringify(record, null, 2))
-
     if (record.eventName == 'INSERT') {
       const newImage = record.dynamodb?.NewImage
       const event: { [key: string]: string | undefined } = {}
@@ -15,11 +13,10 @@ export const handler: Handler = async (event, context, callback) => {
         const value = valueWithType['S']
         event[key] = value
       }
-      console.log(event)
       snsClient
         .send(
           new PublishCommand({
-            TopicArn: process.env.AWS_TOPIC_SHOPPING_CART_EVENTS,
+            TopicArn: process.env.AWS_SNS_TOPIC_ARN,
             MessageGroupId: event['shoppingCartId'],
             MessageDeduplicationId: v4(),
             Message: JSON.stringify(event),

@@ -126,6 +126,45 @@ Resources:
         - ShoppingCartEventDynamoTable
         - StreamArn
       StartingPosition: TRIM_HORIZON
+  ShoppingCartFakeListenerQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName:
+        Fn::Sub: ${AwsEnvPrefix}-shopping-cart-fake-listener.fifo
+      FifoQueue: true
+      DeduplicationScope: messageGroup
+      FifoThroughputLimit: perMessageGroupId
+      VisibilityTimeout: 650
+  ShoppingCartSnsToSqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+      - Ref: ShoppingCartFakeListenerQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: sns.amazonaws.com
+          Resource:
+          - Fn::GetAtt:
+            - ShoppingCartFakeListenerQueue
+            - Arn
+          Action: sqs:SendMessage
+          Condition:
+            ForAnyValue:ArnEquals:
+              aws:SourceArn:
+              - Ref: ShoppingCartEventTopic
+  ShoppingCartFakeListenerSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn:
+        Ref: ShoppingCartEventTopic
+      Endpoint:
+        Fn::GetAtt:
+        - ShoppingCartFakeListenerQueue
+        - Arn
 Outputs:
   ShoppingCartEventsTableName:
     Value:
