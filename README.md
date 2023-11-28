@@ -32,7 +32,7 @@ yarn add @types/aws-lambda @aws-sdk/client-sns
 # Scenario
 
 ## Chapter 1 - Quick Domain discovery and setup live coding (15')
-* 
+
 * Ask for the domain to implement
 * Create the repository
 ```shell
@@ -96,13 +96,21 @@ nx build lambda-stream-to-sns
 ```
 * Update infra SAM to add lambda, topic and queue
 * Add `CAPABILITY_NAMED_IAM` to `samconfig.toml`
-* Deploy new infra (explain no need to build as we are already using esbuild to build the image)
+* Deploy new infra
 ```shell
 sam build
 sam deploy
+```
+
+* using esbuild (does not work with nx executor yet)
+```shell
+esbuild --bundle --target=es2020 --sourcemap --platform=node --minify=false shopping-cart-lambda-stream-to-sns/src/index.ts --outfile=dist/esbuild-shopping-cart-lambda-stream-to-sns/index.js
 ```
 
 * Get event from fake queue created
 ```shell
 while sleep 1; do aws sqs receive-message --queue-url https://sqs.eu-west-3.amazonaws.com/909133997228/test-tibo-20231125-3-fake-listener.fifo --region eu-west-3; done
 ```
+
+## Conclusion
+We paved the way to a neat and useful event sourcing approach, where domain can freely exchange information and perform adequate commands.

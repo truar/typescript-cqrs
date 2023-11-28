@@ -6,16 +6,20 @@
   "targets": {
     "build": {
       "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
       "options": {
+        "platform": "node",
+        "outputPath": "dist/shopping-cart-lambda-stream-to-sns",
+        "format": ["cjs"],
+        "bundle": true,
         "main": "shopping-cart-lambda-stream-to-sns/src/index.ts",
-        "tsConfig": "shopping-cart-lambda-stream-to-sns/tsconfig.app.json",
-        "outputPath": "dist/shopping-cart-lambda-stream-to-sns"
+        "tsConfig": "shopping-cart-lambda-stream-to-sns/tsconfig.app.json"
       },
       "configurations": {
         "development": {},
         "production": {
           "esbuildOptions": {
-            "sourcemap": false,
             "outExtension": {
               ".js": ".js"
             }

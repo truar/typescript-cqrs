@@ -83,7 +83,7 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-shopping-cart-lambda-stream-to-sns'
       Role: !GetAtt ShoppingCartLambdaExecutionRole.Arn
       CodeUri: ./dist/shopping-cart-lambda-stream-to-sns
-      Handler: main.handler
+      Handler: index.handler
       Runtime: nodejs18.x
       Timeout: 30 # default is 3s
       MemorySize: 2048 # default is 128Mi
@@ -91,15 +91,15 @@ Resources:
         - x86_64
       Environment:
         Variables:
-          AWS_TOPIC_SHOPPING_CART_EVENTS: !Ref ShoppingCartEventTopic
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: 'es2020'
-        Sourcemap: true
-        EntryPoints:
-          - index.js
+          AWS_SNS_TOPIC_ARN: !Ref ShoppingCartEventTopic
+#    Metadata:
+#      BuildMethod: esbuild
+#      BuildProperties:
+#        Minify: false
+#        Target: 'es2020'
+#        Sourcemap: true
+#        EntryPoints:
+#          - index.js
 
   ShoppingCartStreamToLambda:
     Type: AWS::Lambda::EventSourceMapping

@@ -39,9 +39,7 @@ export class DynamoDbShoppingCartRepository implements ShoppingCartRepository {
     private readonly dynamoDocumentClient: DynamoDBDocumentClient,
     configService: ConfigService
   ) {
-    this.tableName = configService.getOrThrow<string>(
-      'AWS_DYNAMODB_SHOPPING_CART_EVENTS_TABLE_NAME'
-    )
+    this.tableName = configService.getOrThrow<string>('AWS_DYNAMODB_TABLE_NAME')
   }
 
   async findById(
