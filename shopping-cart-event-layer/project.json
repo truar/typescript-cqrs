@@ -1,0 +1,54 @@
+{
+  "name": "shopping-cart-event-layer",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "shopping-cart-event-layer/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/shopping-cart-event-layer",
+        "main": "shopping-cart-event-layer/src/main.ts",
+        "tsConfig": "shopping-cart-event-layer/tsconfig.app.json"
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "shopping-cart-event-layer:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "shopping-cart-event-layer:build:development"
+        },
+        "production": {
+          "buildTarget": "shopping-cart-event-layer:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["shopping-cart-event-layer/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "shopping-cart-event-layer/jest.config.ts"
+      }
+    }
+  },
+  "tags": []
+}
