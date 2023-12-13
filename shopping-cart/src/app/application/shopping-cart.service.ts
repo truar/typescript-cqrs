@@ -1,6 +1,7 @@
 import { ShoppingCart, ShoppingCartId } from '../domain/shopping-cart'
 import { v4 as uuid } from 'uuid'
 import { ShoppingCartRepository } from '../domain/shopping-cart.repository'
+import { Injectable } from '@nestjs/common'
 
 interface CreateShoppingCartCommand {
   requesterId: string

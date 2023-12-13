@@ -56,7 +56,7 @@ export class DynamoDbShoppingCartRepository implements ShoppingCartRepository {
     )
     const items = queryResult.Items as DynamoItem[]
     const events = toEvent(items)
-    return ShoppingCart.load(events)
+    return ShoppingCart.hydrate({ events })
   }
 
   async save(shoppingCart: ShoppingCart): Promise<void> {

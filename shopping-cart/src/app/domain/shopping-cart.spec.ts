@@ -22,14 +22,16 @@ describe('Shopping cart', () => {
     const id = uuid()
     const creationDate = new Date()
     const ownerId = uuid()
-    const shoppingCart = ShoppingCart.load([
-      {
-        shoppingCartId: id,
-        timestamp: creationDate,
-        ownerId,
-        type: 'ShoppingCartCreated',
-      },
-    ])
+    const shoppingCart = ShoppingCart.hydrate({
+      events: [
+        {
+          shoppingCartId: id,
+          timestamp: creationDate,
+          ownerId,
+          type: 'ShoppingCartCreated',
+        },
+      ],
+    })
 
     const addedOn = new Date()
     const productId = uuid()
@@ -50,14 +52,16 @@ describe('Shopping cart', () => {
     const id = uuid()
     const creationDate = new Date()
     const ownerId = uuid()
-    const shoppingCart = ShoppingCart.load([
-      {
-        shoppingCartId: id,
-        timestamp: creationDate,
-        ownerId,
-        type: 'ShoppingCartCreated',
-      },
-    ])
+    const shoppingCart = ShoppingCart.hydrate({
+      events: [
+        {
+          shoppingCartId: id,
+          timestamp: creationDate,
+          ownerId,
+          type: 'ShoppingCartCreated',
+        },
+      ],
+    })
 
     const addedOn = new Date()
     const productId = uuid()

@@ -27,6 +27,7 @@ class IllegalActionError extends Error {
   }
 }
 export type ShoppingCartId = string
+
 export class ShoppingCart {
   private _pendingEvent?: ShoppingCartDomainEvent = undefined
   private _id?: ShoppingCartId = undefined
@@ -47,6 +48,7 @@ export class ShoppingCart {
     return shoppingCart
   }
 
+  // Change guard => based on number of product
   addItem(userId: string, productId: string, quantity: number, addedOn: Date) {
     if (userId !== this._ownerId) {
       throw new IllegalActionError(
@@ -66,8 +68,20 @@ export class ShoppingCart {
     return this._pendingEvent
   }
 
-  static load(events: ShoppingCartDomainEvent[]) {
+  static hydrate({
+    shoppingCartSnapshot,
+    events,
+  }: {
+    shoppingCartSnapshot?: ShoppingCartSnapshot
+    events: ShoppingCartDomainEvent[]
+  }) {
+    // load aggregate from snapshot
     const shoppingCart = new ShoppingCart()
+    if (shoppingCartSnapshot) {
+      shoppingCart._id = shoppingCartSnapshot.id
+    }
+
+    // enrich aggregate from event
     for (const event of events) {
       switch (event.type) {
         case 'ShoppingCartCreated':
@@ -91,4 +105,8 @@ export class ShoppingCart {
   private applyShoppingCartItemAdded(event: ShoppingCartItemAdded) {
     this._items.push(new ShoppingCartItem(event.productId, event.quantity))
   }
+}
+
+class ShoppingCartSnapshot {
+  constructor(readonly id: string) {}
 }

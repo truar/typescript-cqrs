@@ -60,6 +60,7 @@ pnpm add add uuid @types/uuid @nestjs/config @aws-sdk/client-dynamodb @aws-sdk/l
 * domain & application
 
 ## Chapter 3 - Setting up and Implementing infrastructure (25')
+
 * Log in to AWS by exporting variable (okta > AWS > Sandbox > Admin > Command line or programmatic access)
 * Create template.yaml file at the root of the folder
 * Only create dynamoDB table with stream enabled for now (we will create lambda and SNS topic later)
@@ -77,6 +78,7 @@ aws dynamodb scan --region eu-west-3 --table-name test-tibo-20231125-3-dynamo-ta
 ```
 
 ## Chapter 4 - EDA and Eventual consistency (25')
+
 * Generate new simple ts app that contains lambda code to listen to stream event
 ```shell
 nx g @nx/node:application lambda-stream-to-sns \
@@ -111,6 +113,9 @@ esbuild --bundle --target=es2020 --sourcemap --platform=node --minify=false shop
 ```shell
 while sleep 1; do aws sqs receive-message --queue-url https://sqs.eu-west-3.amazonaws.com/909133997228/test-tibo-20231125-3-fake-listener.fifo --region eu-west-3; done
 ```
+
+### If time
+* Add in-memory snapshotting of the aggregate  
 
 ## Conclusion
 We paved the way to a neat and useful event sourcing approach, where domain can freely exchange information and perform adequate commands.
